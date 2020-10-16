@@ -6,17 +6,24 @@
     <title>Welcome to Firebase Hosting</title>
 
     <!-- update the version number as needed -->
-    <script defer src="/__/firebase/7.23.0/firebase-app.js"></script>
+    <!-- <script defer src="/__/firebase/7.23.0/firebase-app.js"></script> -->
     <!-- include only the Firebase features as you need -->
-    <script defer src="/__/firebase/7.23.0/firebase-auth.js"></script>
+    <!-- <script defer src="/__/firebase/7.23.0/firebase-auth.js"></script>
     <script defer src="/__/firebase/7.23.0/firebase-database.js"></script>
     <script defer src="/__/firebase/7.23.0/firebase-messaging.js"></script>
     <script defer src="/__/firebase/7.23.0/firebase-storage.js"></script>
     <script defer src="/__/firebase/7.23.0/firebase-analytics.js"></script>
     <script defer src="/__/firebase/7.23.0/firebase-remote-config.js"></script>
-    <script defer src="/__/firebase/7.23.0/firebase-performance.js"></script>
+    <script defer src="/__/firebase/7.23.0/firebase-performance.js"></script> -->
     <!-- initialize the SDK after all desired features are loaded -->
-    <script defer src="/__/firebase/init.js"></script>
+    <!-- <script defer src="/__/firebase/init.js"></script> -->
+
+    <!-- The core Firebase JS SDK is always required and must be listed first -->
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-app.js"></script>
+
+    <!-- TODO: Add SDKs for Firebase products that you want to use
+         https://firebase.google.com/docs/web/setup#available-libraries -->
+    <script src="https://www.gstatic.com/firebasejs/7.24.0/firebase-analytics.js"></script>
 
     <style media="screen">
       body { background: #ECEFF1; color: rgba(0,0,0,0.87); font-family: Roboto, Helvetica, Arial, sans-serif; margin: 0; padding: 0; }
@@ -68,6 +75,7 @@
         <li id="chatText"></li>
         <li><input type="text" name="" id="my_text"></li>
         <li><a onclick="changeData()">更新</a></li>
+        <li><a onclick="createChat()">ルーム作成</a></li>
       </ul>
     </div>
 
@@ -79,6 +87,37 @@
       function changeData(){
         var text = document.getElementById("my_text").value;
         myChatAll.set({title:"example", text:text});
+      }
+
+      function createChat(){
+        const refChats = firebase.database().ref("chats");
+        const expireAt = Date.now() + 1000 * 60 * 60 * 6;
+        const chatUid = refChats.push().getKey();
+        const refUser = firebase.database().ref("users");
+        const updateObj = {};
+        updateObj["name"] = 'room';
+        updateObj["chats/" + chatUid] = "guest";
+        refUser.child('123').update(updateObj);
+        refChats
+          .child(chatUid)
+          .set({ creatorName: 'arrow', expireAt });
+        delete updateObj.name;
+        updateObj["chats/" + chatUid] = "creator";
+        refUser.child('456').update(updateObj);
+        const refMembers = firebase
+          .database()
+          .ref("members/" + chatUid)
+          .set({ ['123']: "guest", ['456']: "creator" });
+        firebase
+          .database()
+          .ref("messages/" + chatUid)
+          .push({
+            image:
+              "sample.png",
+            message: "こんにちは！とくめいのネコさんが入室しました！By運営",
+            isFromGuest: true
+          });
+        return (location = `/?chatUid=${chatUid}&expireAt=${expireAt}`);
       }
 
       myChatAll.on("value", function(snapshot) {
